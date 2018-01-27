@@ -93,6 +93,8 @@ If you don't want to just check your current's work spot condition, but you'd ra
 
 The loop will stop once you press the same button again and the box will go inactive.
 
+And as mentioned before, whether you're checking the current state of your workspot or walking around finding one, you can start either process again by pressing the corresponding button.
+
 ### Key Components
 
 #### NodeMCU ESP8266
