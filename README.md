@@ -20,11 +20,78 @@ Walking around CLEVER°FRANKE's office you will notice very different atmosphere
 
 ## Prototype
 
-The smart box as seen below tends to solve these problems mentioned above, by cleary indicating the (subconscious) lighting and sound conditions around you, on demand at a simple touch. The LED matrix will indicate both lighting and sound as barcharts and end with a positive, neutral, or sad emoji. It will go inactive afterwards te prevent any distraction.
-
-If the conditions are questionable, the flex worker can move him/her self to a more appropriate working spot. He/she can then check again by simply touching the box again.
+The portable smart box as seen below tends to solve these problems mentioned above, by cleary indicating the (subconscious) lighting and sound conditions around you, on demand at a simple touch. Find out the state of your current spot or take it with you and test it along the way.
 
 <img src="images/prototype.png" alt="prototype" width=400 />
+
+###### _First concept sketch, might slightly differ from the end result._
+
+The interaction starts at the first glance at the box in it's inactive state. A button on the top side of the box features two partially visible sensors and a button. Pressing the button will result in the LED matrix being turned and the word 'light' will slowly scroll by as it doesn't fit in the 8x8 grid. After a short delay the lux sensor will start picking up the light (lux) intensity and visualise it on the matrix. It behaves sort of like an equalizer as seen below.
+
+<img src="images/light-visual-green.png" width=200 />
+
+###### _The current light intensity is a productivity hotspot!_
+
+<img src="images/light-visual-slightly-bright.png" width=200 />
+
+###### _Yellow at the top side indicates it's a but too bright, but not too much to worry about._
+
+<img src="images/light-sensor-medium-bright.png" width=200 />
+
+###### _It's becoming pretty bright over here, this might influence you._
+
+<img src="images/light-visual-very-dark.png" width=200 />
+
+###### _Alternatively, visualising the other side indicates it is too dark. This means it is **very** dark and it may effect your productivity._
+
+The above is the result of a single value being visualised. The light sensor will capture 20 delayed measurements and each measurement has it's own visualisation. Meaning, if the light intensity is fluctuating in short time spans, you can see the changes live on the LED matrix. After the 20 results it will end with an emoji conclusion, which can be one of the following emoji based on the cumulative average.
+
+<img src="images/frown.png" width=200 />
+
+###### _The results were poor, you are working in a dark spot._
+
+<img src="images/neutral.png" width=200 />
+
+###### _It's not perfect but still okay-ish._
+
+<img src="images/smile.png" width=200 />
+
+###### _You are working in perfect conditions._
+
+Now that we have drawn a conclusion about the light intensity, we move onwards to sound. You've guessed it, "sound" will scroll by and a similar but slightly different visualisation process is about to start.
+
+Because there is not really such a thing as 'too quiet to concentrate', it's not valuable visualize both ways like with the light intensity (too dark or bright). Therefor, the equalizer pattern will start from the bottom en move upwards the more noise there is.
+
+<img src="images/sound-good.png" width=200 />
+
+###### _No destracting sound levels._
+
+<img src="images/sound-medium.png" width=200 />
+
+###### _Questionable noise in the background_
+
+<img src="images/sound-bad.png" width=200 />
+
+###### _You should not work with this amount of noise present._
+
+The emoji conclusion based on the average of results will also appear here when done.
+
+When done the box will go inactive again to not further disturb the user's attention.
+To start again, simply press the button on the top part of the box.
+
+### On-the-fly mode
+
+If you don't want to just check your current's work spot condition, but you'd rather look for a proper one, it's possible to press a different button on the side to enable on-the-fly mode. This mode is not a sequence of visualisations in a set time frame, but a continuous loop of a combined visualisation of sound and light.
+
+<img src="images/combined-good.png" width=200 />
+
+###### _On the left you see the light intensity in the same way as before, only smaller. Same goes for the sound visualisation on the right. Both seem to be very pleasant._
+
+<img src="images/combined-bad.png" width=200 />
+
+###### _Light appears to be slighty on the bright side while it's definitely noisy._
+
+The loop will stop once you press the same button again and the box will go inactive.
 
 ### Key Components
 
