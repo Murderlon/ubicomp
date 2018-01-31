@@ -7,8 +7,8 @@
 Adafruit_BicolorMatrix matrix = Adafruit_BicolorMatrix();
 Adafruit_TSL2561_Unified tsl = Adafruit_TSL2561_Unified(TSL2561_ADDR_FLOAT, 12345);
 
-boolean isContinuousActive = false;
-boolean isNormalActive = false;
+boolean isContinuous = false;
+boolean isSequential = false;
 
 const int measurementLimit = 20;
 const int maxScale = 8;
@@ -19,9 +19,9 @@ const int soundYellowZone = 2;
 const int soundWindowWidth = 50; // Sample window width in mS (50 mS = 20Hz)
 unsigned int soundSample;
 
-const int normalButtonPin = 0; // D3
-int normalButtonState;
-int normalButtonPreviousState = LOW;
+const int sequentialButtonPin = 0; // D3
+int sequentialButtonState;
+int sequentialButtonPreviousState = LOW;
 
 const int continuousButtonPin = 12; // D6
 int continuousButtonState;
@@ -71,25 +71,25 @@ void setup()
   // Changing the integration time gives you better sensor resolution (402ms = 16-bit data)
   tsl.setIntegrationTime(TSL2561_INTEGRATIONTIME_13MS); /* fast but low resolution */
   // Setup activation button
-  pinMode(normalButtonPin, INPUT);
+  pinMode(sequentialButtonPin, INPUT);
   pinMode(soundSensorPin, INPUT);
 }
 
 void loop()
 {
   debouncedListener(
-      normalButtonPin,
-      normalButtonState,
-      normalButtonPreviousState,
-      isNormalActive);
+      sequentialButtonPin,
+      sequentialButtonState,
+      sequentialButtonPreviousState,
+      isSequential);
 
   debouncedListener(
       continuousButtonPin,
       continuousButtonState,
       continuousButtonPreviousState,
-      isContinuousActive);
+      isContinuous);
 
-  if (isNormalActive)
+  if (isSequential)
   {
     scrolledText("light");
     measureAndDrawLight();
@@ -104,19 +104,21 @@ void loop()
     matrix.writeDisplay();
 
     int i = 0;
-    while (i <= 300)
+    int cumulativeSoundMeasurements;
+    while (i < 300)
     {
-      measureAndDrawSound();
-      delay(2);
+      measureAndDrawSound(cumulativeSoundMeasurements);
       i++;
     }
+    int averageSoundMeasurement = cumulativeSoundMeasurements / 300;
+    Serial.println(averageSoundMeasurement);
     matrix.clear();
     matrix.writeDisplay();
 
-    isNormalActive = false;
+    isSequential = false;
   }
 
-  if (isContinuousActive)
+  if (isContinuous)
   {
     measureAndDrawCombined();
   }
@@ -247,7 +249,7 @@ void measureAndDrawLight()
   }
 }
 
-void measureAndDrawSound()
+void measureAndDrawSound(int &total)
 {
   unsigned long startMillis = millis(); // Start of soundSample window
   unsigned int peakToPeak = 0;          // peak-to-peak level
@@ -271,6 +273,7 @@ void measureAndDrawSound()
     }
   }
   peakToPeak = signalMax - signalMin;
+  total = total + peakToPeak;
 
   // map 1v p-p level to the max scale of the display
   int displayPeak = map(peakToPeak, 0, 1300, 0, maxScale);
