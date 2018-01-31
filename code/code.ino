@@ -116,6 +116,7 @@ void loop()
       i++;
     }
     int averageSoundMeasurement = totalSound / 300;
+    conditionallyDrawSoundConclusion(averageSoundMeasurement);
 
     matrix.clear();
     matrix.writeDisplay();
@@ -272,6 +273,7 @@ void measureAndDrawSound(int &total)
     }
   }
   peakToPeak = signalMax - signalMin;
+  Serial.println(peakToPeak);
   total = total + peakToPeak;
 
   // calculate range based on domain
@@ -344,4 +346,22 @@ void conditionallyDrawLightConclusion(int average)
 
 void conditionallyDrawSoundConclusion(int average)
 {
+  matrix.clear();
+  matrix.setRotation(1);
+
+  if (average > 300 && average <= 500)
+  {
+    matrix.drawBitmap(0, 0, smile, 8, 8, LED_GREEN);
+  }
+  if (average > 500 && average <= 700)
+  {
+    matrix.drawBitmap(0, 0, neutral, 8, 8, LED_YELLOW);
+  }
+  if (average > 700)
+  {
+    matrix.drawBitmap(0, 0, frown, 8, 8, LED_RED);
+  }
+
+  matrix.writeDisplay();
+  delay(3000);
 }
