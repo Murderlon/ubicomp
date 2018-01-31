@@ -19,6 +19,8 @@ const int soundYellowZone = 2;
 const int soundWindowWidth = 50; // Sample window width in mS (50 mS = 20Hz)
 unsigned int soundSample;
 
+unsigned int lightSample;
+
 const int sequentialButtonPin = 0; // D3
 int sequentialButtonState;
 int sequentialButtonPreviousState = LOW;
@@ -77,17 +79,19 @@ void setup()
 
 void loop()
 {
-  debouncedListener(
-      sequentialButtonPin,
-      sequentialButtonState,
-      sequentialButtonPreviousState,
-      isSequential);
+  // debouncedListener(
+  //     sequentialButtonPin,
+  //     sequentialButtonState,
+  //     sequentialButtonPreviousState,
+  //     isSequential);
 
-  debouncedListener(
-      continuousButtonPin,
-      continuousButtonState,
-      continuousButtonPreviousState,
-      isContinuous);
+  // debouncedListener(
+  //     continuousButtonPin,
+  //     continuousButtonState,
+  //     continuousButtonPreviousState,
+  //     isContinuous);
+
+  measureAndDrawLight();
 
   if (isSequential)
   {
@@ -173,81 +177,146 @@ void scrolledText(String text)
 
 void measureAndDrawLight()
 {
-  int total = 0;
+  unsigned long startMillis = millis(); // Start of soundSample window
 
-  for (int i = 1; i <= measurementLimit; i++)
+  while (millis() - startMillis < soundWindowWidth)
   {
-    // Get a new sensor event
     sensors_event_t event;
     tsl.getEvent(&event);
+    lightSample = event.light;
+  }
 
-    if (event.light)
+  Serial.println(lightSample);
+
+  // calculate range based on domain
+  int displayPeakBright = map(lightSample, 0, 400, 4, 8);
+  int displayPeakDark = map(lightSample, 0, 400, 0, 4);
+
+  // Update the display:
+  for (int i = 0; i < 7; i++) // shift the display left
+  {
+    matrix.displaybuffer[i] = matrix.displaybuffer[i + 1];
+  }
+
+  for (int i = 4; i <= 8; i++)
+  {
+    if (i >= displayPeakBright) // blank these pixels
     {
-      matrix.clear();
-
-      if (event.light < 50)
-      {
-        matrix.fillRect(0, 7, 8, 1, LED_RED);
-      }
-      if (event.light < 100)
-      {
-        matrix.fillRect(0, 6, 8, 1, LED_RED);
-      }
-      if (event.light < 200)
-      {
-        matrix.fillRect(0, 5, 8, 1, LED_YELLOW);
-      }
-
-      // everything inbetween is fine
-      matrix.fillRect(0, 3, 8, 2, LED_GREEN);
-
-      if (event.light > 500)
-      {
-        matrix.fillRect(0, 2, 8, 1, LED_YELLOW);
-      }
-      if (event.light > 700)
-      {
-        matrix.fillRect(0, 1, 8, 1, LED_RED);
-      }
-      if (event.light > 1000)
-      {
-        matrix.fillRect(0, 0, 8, 1, LED_RED);
-      }
-      matrix.writeDisplay();
-      total = total + event.light;
+      matrix.drawPixel(i, 7, 0);
     }
-
-    delay(200);
-
-    if (i == measurementLimit)
+    else if (i < 5)
     {
-      matrix.clear();
-      int average = total / measurementLimit;
-
-      if (average <= 50)
-      {
-        matrix.drawBitmap(0, 0, frown, 8, 8, LED_RED);
-      }
-      if (average > 50 && average <= 200)
-      {
-        matrix.drawBitmap(0, 0, neutral, 8, 8, LED_YELLOW);
-      }
-      if (average > 200 && average <= 500)
-      {
-        matrix.drawBitmap(0, 0, smile, 8, 8, LED_GREEN);
-      }
-      if (average > 500 && average <= 600)
-      {
-        matrix.drawBitmap(0, 0, neutral, 8, 8, LED_YELLOW);
-      }
-      if (average > 600)
-      {
-        matrix.drawBitmap(0, 0, frown, 8, 8, LED_RED);
-      }
-      matrix.writeDisplay();
+      matrix.drawPixel(i, 7, LED_GREEN);
+    }
+    else if (i < 7 && i >= 5)
+    {
+      matrix.drawPixel(i, 7, LED_YELLOW);
+    }
+    else
+    {
+      matrix.drawPixel(i, 7, LED_RED);
     }
   }
+
+  for (int i = 4; i >= 0; i--)
+  {
+    if (i <= displayPeakDark) // blank these pixels
+    {
+      matrix.drawPixel(i, 7, 0);
+    }
+    else if (i > 3)
+    {
+      matrix.drawPixel(i, 7, LED_GREEN);
+    }
+    else if (i < 4 && i > 1)
+    {
+      matrix.drawPixel(i, 7, LED_YELLOW);
+    }
+    else
+    {
+      matrix.drawPixel(i, 7, LED_RED);
+    }
+  }
+  matrix.writeDisplay();
 }
+
+// void measureAndDrawLight()
+// {
+//   int total = 0;
+
+//   for (int i = 1; i <= measurementLimit; i++)
+//   {
+//     // Get a new sensor event
+//     sensors_event_t event;
+//     tsl.getEvent(&event);
+
+//     if (event.light)
+//     {
+//       matrix.clear();
+
+//       if (event.light < 50)
+//       {
+//         matrix.fillRect(0, 7, 8, 1, LED_RED);
+//       }
+//       if (event.light < 100)
+//       {
+//         matrix.fillRect(0, 6, 8, 1, LED_RED);
+//       }
+//       if (event.light < 200)
+//       {
+//         matrix.fillRect(0, 5, 8, 1, LED_YELLOW);
+//       }
+
+//       // everything inbetween is fine
+//       matrix.fillRect(0, 3, 8, 2, LED_GREEN);
+
+//       if (event.light > 500)
+//       {
+//         matrix.fillRect(0, 2, 8, 1, LED_YELLOW);
+//       }
+//       if (event.light > 700)
+//       {
+//         matrix.fillRect(0, 1, 8, 1, LED_RED);
+//       }
+//       if (event.light > 1000)
+//       {
+//         matrix.fillRect(0, 0, 8, 1, LED_RED);
+//       }
+//       matrix.writeDisplay();
+//       total = total + event.light;
+//     }
+
+//     delay(200);
+
+//     if (i == measurementLimit)
+//     {
+//       matrix.clear();
+//       int average = total / measurementLimit;
+
+//       if (average <= 50)
+//       {
+//         matrix.drawBitmap(0, 0, frown, 8, 8, LED_RED);
+//       }
+//       if (average > 50 && average <= 200)
+//       {
+//         matrix.drawBitmap(0, 0, neutral, 8, 8, LED_YELLOW);
+//       }
+//       if (average > 200 && average <= 500)
+//       {
+//         matrix.drawBitmap(0, 0, smile, 8, 8, LED_GREEN);
+//       }
+//       if (average > 500 && average <= 600)
+//       {
+//         matrix.drawBitmap(0, 0, neutral, 8, 8, LED_YELLOW);
+//       }
+//       if (average > 600)
+//       {
+//         matrix.drawBitmap(0, 0, frown, 8, 8, LED_RED);
+//       }
+//       matrix.writeDisplay();
+//     }
+//   }
+// }
 
 void measureAndDrawSound(int &total)
 {
