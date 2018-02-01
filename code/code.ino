@@ -98,12 +98,11 @@ void loop()
     int totalLight = 0;
     while (x < 300)
     {
-      measureAndDrawLight(totalLight);
+      measureAndDrawLight(totalLight, 0, 7);
       delay(3);
       x++;
     }
     int averageLightMeasurement = totalLight / 300;
-    Serial.println(averageLightMeasurement);
     conditionallyDrawLightConclusion(averageLightMeasurement);
 
     scrolledText("sound");
@@ -111,7 +110,7 @@ void loop()
     int totalSound = 0;
     while (i < 300)
     {
-      measureAndDrawSound(totalSound);
+      measureAndDrawSound(totalSound, 0, 7);
       delay(3);
       i++;
     }
@@ -126,6 +125,12 @@ void loop()
   if (isContinuous)
   {
     measureAndDrawCombined();
+  }
+
+  if (!isContinuous && !isSequential)
+  {
+    matrix.clear();
+    matrix.writeDisplay();
   }
 }
 
@@ -177,7 +182,7 @@ void scrolledText(String text)
   }
 }
 
-void measureAndDrawLight(int &total)
+void measureAndDrawLight(int &total, int displayMin, int displayMax)
 {
   matrix.setRotation(4);
   unsigned long startMillis = millis(); // Start of soundSample window
@@ -195,7 +200,7 @@ void measureAndDrawLight(int &total)
   int displayPeakDark = map(lightSample, 0, 400, 0, 4);
 
   // Update the display:
-  for (int i = 0; i < 7; i++) // shift the display left
+  for (int i = displayMin; i < displayMax; i++) // shift the display left
   {
     matrix.displaybuffer[i] = matrix.displaybuffer[i + 1];
   }
@@ -248,7 +253,7 @@ void measureAndDrawLight(int &total)
   matrix.writeDisplay();
 }
 
-void measureAndDrawSound(int &total)
+void measureAndDrawSound(int &total, int displayMin, int displayMax)
 {
   matrix.setRotation(4);
   unsigned long startMillis = millis(); // Start of soundSample window
@@ -273,14 +278,13 @@ void measureAndDrawSound(int &total)
     }
   }
   peakToPeak = signalMax - signalMin;
-  Serial.println(peakToPeak);
   total = total + peakToPeak;
 
   // calculate range based on domain
   int displayPeak = map(peakToPeak, 0, 1300, 0, maxScale);
 
   // Update the display:
-  for (int i = 0; i < 7; i++) // shift the display left
+  for (int i = displayMin; i < displayMax; i++) // shift the display left
   {
     matrix.displaybuffer[i] = matrix.displaybuffer[i + 1];
   }
@@ -310,8 +314,95 @@ void measureAndDrawSound(int &total)
 
 void measureAndDrawCombined()
 {
-  Serial.println("combined");
-  delay(200);
+  unsigned long startMillis = millis(); // Start of soundSample window
+  unsigned int peakToPeak = 0;          // peak-to-peak level
+
+  unsigned int signalMax = 0;
+  unsigned int signalMin = 1024;
+
+  matrix.setRotation(1);
+
+  // Get a new sensor event
+  sensors_event_t event;
+  tsl.getEvent(&event);
+
+  if (event.light)
+  {
+    matrix.clear();
+
+    if (event.light < 50)
+    {
+      matrix.fillRect(0, 7, 3, 1, LED_RED);
+    }
+    if (event.light < 100)
+    {
+      matrix.fillRect(0, 6, 3, 1, LED_RED);
+    }
+    if (event.light < 200)
+    {
+      matrix.fillRect(0, 5, 3, 1, LED_YELLOW);
+    }
+
+    // everything inbetween is fine
+    matrix.fillRect(0, 3, 3, 2, LED_GREEN);
+
+    if (event.light > 500)
+    {
+      matrix.fillRect(0, 2, 3, 1, LED_YELLOW);
+    }
+    if (event.light > 700)
+    {
+      matrix.fillRect(0, 1, 3, 1, LED_RED);
+    }
+    if (event.light > 1000)
+    {
+      matrix.fillRect(0, 0, 3, 1, LED_RED);
+    }
+
+    while (millis() - startMillis < soundWindowWidth)
+    {
+      soundSample = analogRead(soundSensorPin);
+      if (soundSample < 1024) // toss out spurious readings
+      {
+        if (soundSample > signalMax)
+        {
+          signalMax = soundSample; // save just the max levels
+        }
+        else if (soundSample < signalMin)
+        {
+          signalMin = soundSample; // save just the min levels
+        }
+      }
+    }
+
+    peakToPeak = signalMax - signalMin;
+
+    // calculate range based on domain
+    int displayPeak = map(peakToPeak, 0, 1300, 0, maxScale);
+
+    for (int i = 0; i <= maxScale; i++)
+    {
+      if (i >= displayPeak) // blank these pixels
+      {
+        matrix.fillRect(5, i, 7, 1, 0);
+      }
+      else if (i < soundYellowZone)
+      {
+        matrix.fillRect(5, i, 7, 1, LED_GREEN);
+      }
+      else if (i < soundRedZone && i >= soundYellowZone)
+      {
+        matrix.fillRect(5, i, 7, 1, LED_YELLOW);
+      }
+      else
+      {
+        matrix.fillRect(5, i, 7, 1, LED_RED);
+      }
+    }
+
+    matrix.writeDisplay();
+    delay(3);
+  }
 }
 
 void conditionallyDrawLightConclusion(int average)
